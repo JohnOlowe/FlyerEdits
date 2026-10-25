@@ -35,9 +35,13 @@ GitHub **rejects any single file ≥ 100 MB** on push, and warns at 50 MB. Split
 because the cap is per *file*, not per commit.
 
 ```bash
-./scripts/git_sync.sh pack big_render.mp4     # → large/big_render.mp4.parts/part-000… at 90 MB each
-./scripts/git_sync.sh push "add big_render chunks"
-./scripts/git_sync.sh drop big_render.mp4     # frees the workspace copy
+# small-ish files (< 40 MB): chunks stay on main
+./scripts/git_sync.sh pack clip.mp4
+./scripts/git_sync.sh push "add clip chunks"
+./scripts/git_sync.sh drop clip.mp4
+
+# anything bigger: chunks go to the 'assets' branch, workspace never sees them
+./scripts/git_sync.sh bulk /var/tmp/master.mov --rm
 ```
 
 What `pack` produces in `large/<name>.parts/`:
@@ -76,20 +80,59 @@ fresh, reassembled → **byte-identical sha256**.
 MAX_FILE_MB=95 WARN_FILE_MB=45 CHUNK_MB=90 ./scripts/git_sync.sh push "…"
 ```
 
-## C. The catch nobody mentions
+## C. Correction: big files CAN live here during a turn
 
-**The 128 MB workspace cap is smaller than GitHub's 100 MB file cap — nearly the same
-order of magnitude.** A 500 MB raw master can never exist here long enough to be split.
+The 128 MB is a **snapshot** cap, not a disk cap. Measured on this machine:
 
-So for real video work:
-- **Never import a raw master.** Trim/transcode outside the workspace, or
-- **Export in segments** so each piece is already < 90 MB, e.g.
+| Location | Size | Snapshotted? |
+|---|---|---|
+| `/` (and `/home/user`) | 25 GB, ~21 GB free | `/home/user` yes |
+| `/tmp` (tmpfs, RAM-backed) | 992 MB | no |
+| `/var/tmp` | same 25 GB disk | no |
+
+So a 500 MB master **can** sit here mid-turn — you just have to get rid of it before the
+turn ends. Verified: a 250 MB file was created, split, pushed and deleted inside one turn.
+
+**But splitting does not reduce total bytes.** 500 MB of chunks is still 500 MB, and
+`.git` inside `/home/user` counts toward the cap too — so committing chunks to `main` makes
+the workspace *worse* (source + chunks + pack objects). That's why the flow is:
+
+```bash
+./scripts/git_sync.sh bulk /var/tmp/master.mov --rm
+```
+
+`bulk` does the whole job in scratch space outside the workspace:
+
+1. clones the repo into `/var/tmp` (never `/home/user`)
+2. splits the file into 90 MB chunks there
+3. pushes them to a **separate `assets` branch**
+4. verifies the chunk count + branch SHA against the remote
+5. deletes the source (`--rm`) and the scratch clone
+6. commits only **metadata** (manifest + sha256 + reassemble.sh, a few KB) to `main`
+
+Measured on a real run: 250 MB master → 3 chunks, **workspace total 1 MB**, verified
+byte-identical after re-cloning from scratch.
+
+Why a separate branch: `pull` on `main` fetches only `main`'s objects, so the big blobs
+never enter the workspace. Restore with
+`git clone -b assets --single-branch <url>`.
+
+### When to use which
+
+| | `pack` | `bulk` |
+|---|---|---|
+| used for | files < 40 MB | anything bigger |
+| where chunks are committed | `main` | `assets` branch |
+| workspace/.git growth | yes, by the file's size | **none** |
+| guard | refuses ≥ `PACK_SAFE_MB` (40 MB) | no limit |
+
+### Still worth doing for video
+- Trim/transcode before importing when you can — a 2 GB master is 2 GB of transfer either way
+- Export in segments so each piece is already chunk-sized:
   `ffmpeg -i in.mp4 -c copy -f segment -segment_time 60 -reset_timestamps 1 segments/part-%03d.mp4`
-  then `pack` each segment (they're already chunk-sized), or
-- Keep masters on Drive, and commit only the **chunked deliverable** plus the layer PNGs
-  and build scripts (those regenerate everything).
+- Keep true masters on Drive; commit the **chunked deliverable** + layer PNGs + build scripts
 
-`segments/` is gitignored; `large/` is not — chunks are meant to be committed.
+`segments/` is gitignored; `large/` is committed (on whichever branch).
 
 ## D. Other GitHub ceilings to keep in mind
 - 100 MB / file — hard reject (hence the 90 MB chunks)

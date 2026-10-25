@@ -15,6 +15,10 @@
 #   ./scripts/git_sync.sh drop <file>      # delete local copy once packed
 #   ./scripts/git_sync.sh sizecheck        # workspace vs 128 MB, repo vs limits
 #
+#   Anything bigger than the workspace cap (raw masters, big renders):
+#   ./scripts/git_sync.sh bulk <file> [--rm]   # split + push from scratch space,
+#                                              # never touching /home/user
+#
 #   Deploy-key (SSH) mode:
 #   ./scripts/git_sync.sh keygen           # make an ed25519 keypair, print pubkey
 #   ./scripts/git_sync.sh init git@github.com:<you>/<repo>.git
@@ -30,6 +34,13 @@ WARN_FILE_MB="${WARN_FILE_MB:-45}"  # soft warning
 CHUNK_MB="${CHUNK_MB:-90}"          # split size
 WORKSPACE_MB="${WORKSPACE_MB:-128}" # sandbox cap
 WORKSPACE_SOFT_MB="${WORKSPACE_SOFT_MB:-112}"
+# Scratch space for files too big to live in /home/user. NOT snapshotted,
+# so anything here vanishes at end of turn (and never counts toward the cap).
+BULK_DIR="${BULK_DIR:-/var/tmp}"
+# Big binaries go to their own branch so `pull` on main never drags them in.
+ASSET_BRANCH="${ASSET_BRANCH:-assets}"
+# pack (which commits chunks into the workspace) is only safe for modest files
+PACK_SAFE_MB="${PACK_SAFE_MB:-40}"
 BRANCH="${BRANCH:-main}"
 cd "$REPO_DIR"
 
@@ -232,6 +243,12 @@ pack)
   f="${2:-}"; [ -n "$f" ] || die "usage: $0 pack <file>"
   [ -f "$f" ] || die "no such file: $f"
   base=$(basename "$f")
+  fmb=$(( $(stat -c%s "$f") / 1048576 ))
+  if [ "$fmb" -ge "$PACK_SAFE_MB" ]; then
+    die "$base is ${fmb} MB. 'pack' keeps the chunks inside the workspace, and .git
+   would grow by the same amount — that breaks the ${WORKSPACE_MB} MB cap.
+   Use:  $0 bulk $f"
+  fi
   dir="large/${base}.parts"
   mkdir -p "$dir"
   rm -f "$dir/${base}".part-*
@@ -300,6 +317,125 @@ drop)
   workspace_guard
   ;;
 
+bulk)
+  f="${2:-}"; shift 2 2>/dev/null || true
+  RM=0; KEEP=0
+  for a in "$@"; do
+    case "$a" in
+      --rm) RM=1 ;;
+      --keep) KEEP=1 ;;
+      *) die "unknown flag: $a (use --rm / --keep)" ;;
+    esac
+  done
+  [ -n "$f" ] || die "usage: $0 bulk <file> [--rm] [--keep]"
+  [ -f "$f" ] || die "no such file: $f"
+  need_repo
+
+  remote=$(git remote get-url origin)
+  base=$(basename "$f")
+  bytes=$(stat -c%s "$f"); mb=$(( bytes / 1048576 ))
+  say "bulk: $base (${mb} MB) -> branch '$ASSET_BRANCH' via scratch space in $BULK_DIR"
+  say "main and the workspace are NOT touched by the data"
+
+  WORK=$(mktemp -d "$BULK_DIR/arena-bulk.XXXXXX")
+  trap '[ "${KEEP:-0}" = "1" ] && warn "keeping $WORK" || rm -rf "$WORK"' EXIT
+  R="$WORK/repo"
+
+  # prefer the assets branch (so repeat bulks fast-forward); else start from main
+  if git clone -q --depth 1 -b "$ASSET_BRANCH" "$remote" "$R" 2>/dev/null; then
+    say "cloned existing '$ASSET_BRANCH' branch"
+  else
+    rm -rf "$R"
+    if ! git clone -q --depth 1 -b "$BRANCH" "$remote" "$R" 2>/dev/null; then
+      mkdir -p "$R"; git -C "$R" init -q -b "$ASSET_BRANCH"
+      git -C "$R" remote add origin "$remote"
+    fi
+    git -C "$R" checkout -q -B "$ASSET_BRANCH"
+    say "starting '$ASSET_BRANCH' from '$BRANCH'"
+  fi
+  git -C "$R" config user.name  "$(git config user.name  || echo 'Arena Agent')"
+  git -C "$R" config user.email "$(git config user.email || echo 'agent@arena.local')"
+
+  parts="$R/large/${base}.parts"
+  mkdir -p "$parts"
+  say "splitting into ${CHUNK_MB} MB chunks"
+  split -b "${CHUNK_MB}M" -d -a 3 "$f" "$parts/${base}.part-"
+  n=$(find "$parts" -name "${base}.part-*" | wc -l)
+  sha=$(sha256sum "$f" | cut -d' ' -f1)
+  printf '%s  %s\n' "$sha" "$base" > "$parts/${base}.sha256"
+  cat > "$parts/manifest.txt" <<MFT
+original: $base
+bytes: $bytes
+sha256: $sha
+chunks: $n
+chunk_size_mb: $CHUNK_MB
+branch: $ASSET_BRANCH
+generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+restored_to: restored/$base
+MFT
+  cat > "$parts/reassemble.sh" <<'RSEOF'
+#!/usr/bin/env bash
+# rejoin the chunks and verify. Run from anywhere:
+#   bash large/<name>.parts/reassemble.sh
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE=$(grep -m1 '^original:' "$DIR/manifest.txt" | sed -e 's|^original:[[:space:]]*||' -e 's|.*/||')
+OUT="$DIR/../../restored/$BASE"
+mkdir -p "$(dirname "$OUT")"
+cat "$DIR/${BASE}".part-* > "$OUT"
+got=$(sha256sum "$OUT" | cut -d' ' -f1)
+want=$(cut -d' ' -f1 "$DIR/${BASE}.sha256")
+if [ "$got" = "$want" ]; then echo "OK restored $OUT (sha256 ok)"; else echo "FAIL hash mismatch"; exit 1; fi
+RSEOF
+  chmod +x "$parts/reassemble.sh"
+
+  say "committing ${n} chunk(s) (${mb} MB) on '$ASSET_BRANCH'"
+  git -C "$R" add -A
+  git -C "$R" commit -q -m "bulk: ${base} as ${n} chunks (${mb} MB, sha256 ${sha:0:12})"
+  say "pushing to $remote ($ASSET_BRANCH)"
+  git -C "$R" push -q origin "HEAD:refs/heads/$ASSET_BRANCH" || die "push failed"
+
+  landed=$(git -C "$R" ls-tree -r --name-only HEAD | grep -c "large/${base}.parts/${base}.part-" || true)
+  remote_sha=$(git -C "$R" ls-remote origin "refs/heads/$ASSET_BRANCH" | cut -f1)
+  local_sha=$(git -C "$R" rev-parse HEAD)
+  if [ "$landed" -eq "$n" ] && [ "$remote_sha" = "$local_sha" ]; then
+    ok "verified: ${landed}/${n} chunks live on origin/$ASSET_BRANCH (${remote_sha:0:7})"
+  else
+    warn "verification mismatch — chunks:$landed/$n remote:${remote_sha:0:7} local:${local_sha:0:7}"
+  fi
+
+  # only the tiny metadata goes into the workspace and onto main
+  mkdir -p "large/${base}.parts_meta"
+  cp "$parts/manifest.txt" "$parts/${base}.sha256" "$parts/reassemble.sh" "large/${base}.parts_meta/"
+  cat >> "large/${base}.parts_meta/README.txt" <<MFT
+chunks live on branch '$ASSET_BRANCH' of $remote
+nothing large is stored in the workspace or on main, so 'pull' stays cheap.
+
+restore in a fresh clone:
+  git clone -b $ASSET_BRANCH --single-branch $remote
+  cd <repo> && bash large/${base}.parts/reassemble.sh
+
+restore into an existing clone:
+  git fetch origin $ASSET_BRANCH
+  git checkout origin/$ASSET_BRANCH -- large/${base}.parts
+  bash large/${base}.parts/reassemble.sh
+MFT
+  git add "large/${base}.parts_meta"
+  git commit -q -m "meta: record ${base} on branch $ASSET_BRANCH (${mb} MB, ${n} chunks)" 2>/dev/null \
+    && say "metadata committed to main" || warn "metadata commit skipped"
+
+  if [ "$RM" = "1" ]; then
+    rm -f "$f"
+    ok "deleted $f (${mb} MB freed)"
+  else
+    warn "source still at $f — remove it when happy: rm '$f'"
+  fi
+  echo
+  echo "sha256:  $sha"
+  echo "restore: git clone -b $ASSET_BRANCH --single-branch $remote && cd \$(basename ${remote%.git}) && bash large/${base}.parts/reassemble.sh"
+  echo "then:    $0 push \"meta: $base\"   (main is a few KB lighter, not a few hundred)"
+  ;;
+
 sizecheck)
   used=$(du -sm --exclude=.git . 2>/dev/null | cut -f1)
   gitsz=$(du -sm .git 2>/dev/null | cut -f1)
@@ -358,6 +494,6 @@ doctor)
   ;;
 
 *)
-  die "unknown command '$cmd' (init|keygen|pack|unpack|drop|sizecheck|pull|push|status|doctor)"
+  die "unknown command '$cmd' (init|keygen|pack|unpack|drop|bulk|sizecheck|pull|push|status|doctor)"
   ;;
 esac
