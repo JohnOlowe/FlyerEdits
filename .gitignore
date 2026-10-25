@@ -1,0 +1,15 @@
+# token / credentials — never commit
+.git-credentials
+.netrc
+*.token
+.env
+# python
+__pycache__/
+*.pyc
+# os
+.DS_Store
+Thumbs.db
+# big raw video masters (keep in Drive, export finals instead)
+raw_video/
+*.mov
+*.mkv

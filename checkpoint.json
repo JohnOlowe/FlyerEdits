@@ -1,0 +1,67 @@
+{
+  "last_updated": "2026-10-25T09:08:14.326158",
+  "turn_number": 1.1,
+  "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
+  "project_type": "video_and_graphics_editing",
+  "machine_status": "unstable_crashes_mid_turn_and_between_turns",
+  "location": "Ibadan, Oyo State, NG",
+  "timezone": "Africa/Lagos",
+  "workflow_rules": {
+    "check_context_at_start": true,
+    "save_mid_turn": true,
+    "save_end_of_turn": true
+  },
+  "capabilities": {
+    "can_view_images_directly": true,
+    "can_work_on_layers": true,
+    "can_generate_ai_images": true,
+    "truth_preservation": true,
+    "workspace_persists": "/home/user"
+  },
+  "assets": [
+    {
+      "path": "uploads/IMG-20261024-WA0000.jpg",
+      "role": "source flyer reference",
+      "true": true
+    }
+  ],
+  "layers": [
+    {
+      "id": "L01",
+      "file": "memory/heirs_in_christ/layers3/01_base_gradient.png",
+      "desc": "sky gradient"
+    },
+    {
+      "id": "L02",
+      "file": "memory/heirs_in_christ/layers3/02_halftone_overlay.png",
+      "desc": "halftone dots + warm/violet wash"
+    },
+    {
+      "id": "L03",
+      "file": "memory/heirs_in_christ/layers3/03_mist_overlay.png",
+      "desc": "cloud/mist bands"
+    },
+    {
+      "id": "L04",
+      "file": "memory/heirs_in_christ/layers3/04_burst_overlay.png",
+      "desc": "heavenly burst + shaft + rays"
+    },
+    {
+      "id": "L05",
+      "file": "memory/heirs_in_christ/final3/05_FINAL_background.png",
+      "desc": "grade: vignette, s-curve, grain"
+    }
+  ],
+  "renders": [
+    "memory/heirs_in_christ/background_1280x800.png",
+    "memory/heirs_in_christ/background_1280x800.jpg",
+    "memory/renders/heirs_background_1280x800.png"
+  ],
+  "last_action": "Turn 01 complete \u2014 Heirs background v3 delivered, manifest + context updated",
+  "next_steps": [
+    "Awaiting user approval / tweaks on background",
+    "Next layers likely: title typography 'HEIRS IN CHRIST', scroll 'THEME EXPOSITION' banner, scripture Romans 8:16-17, crown figures / king row, footer band with 8:30AM SUNDAY / BELLO DOME details, Foursquare logo top",
+    "All future layers must stay 1280x800 and be saved as separate transparent PNGs"
+  ],
+  "recovery_point": "Background v3 complete and exported"
+}

@@ -1,0 +1,30 @@
+2026-10-25T09:05:38.852839 - TURN 01 START - Checked context, received Heirs in Christ flyer, need 1280x800 background, layer-by-layer
+{
+  "last_updated": "2026-10-25T09:05:38.852839",
+  "turn_number": 0.2,
+  "project_name": null,
+  "project_type": "video_and_graphics_editing",
+  "machine_status": "unstable_crashes_mid_turn_and_between_turns",
+  "location": "Ibadan, Oyo State, NG",
+  "timezone": "Africa/Lagos",
+  "workflow_rules": {
+    "check_context_at_start": true,
+    "save_mid_turn": true,
+    "save_end_of_turn": true
+  },
+  "capabilities": {
+    "can_view_images_directly": true,
+    "can_work_on_layers": true,
+    "can_generate_ai_images": true,
+    "truth_preservation": true,
+    "workspace_persists": "/home/user"
+  },
+  "assets": [],
+  "layers": [],
+  "renders": [],
+  "last_action": "TURN 01 START - Checked context, received Heirs in Christ flyer, need 1280x800 background, layer-by-layer",
+  "next_steps": [
+    "Awaiting project name and first task from user"
+  ],
+  "recovery_point": "TURN 00 complete - system initialized"
+}
