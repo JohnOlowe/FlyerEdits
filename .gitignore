@@ -1,3 +1,5 @@
+# git config lands in $HOME which == the workspace root
+.gitconfig
 # token / credentials - never commit
 .git-credentials
 .netrc

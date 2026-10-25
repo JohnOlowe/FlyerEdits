@@ -193,8 +193,8 @@ doctor)
       ;;
   esac
   say "confirming script will never force push"
-  if grep -Eq 'git[[:space:]]+push[^|;]*--force' "$0"; then
-    warn "a git push with --force exists in this script — remove it!"
+  if sed 's/#.*//' "$0" | grep -Eq 'git[[:space:]]+push[^|;]*--force'; then
+    warn "found a destructive push flag in this script — remove it!"
   else
     ok "no force-pushing git commands in this script"
   fi
