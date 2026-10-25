@@ -76,3 +76,14 @@
 
 **TURN 04 cleanup:** removed pip cache from tracking, extended .gitignore (.cache/, .local/, .npm/, .venv/, node_modules/, dist/, build/, out/, target/). Verified with `git grep` that the real token appears in ZERO tracked files. Repo head now 448e156, 60 tracked files.
 **To resume:** `./scripts/git_sync.sh pull` at start of turn, `push "<what changed>"` at end.
+
+---
+**[2026-10-25 12:10 WAT] TURN 05 — SIZE BUDGET + LARGE-FILE SPLIT**
+- User: workspace hard-capped at 128MB — must delete + get back under before ending a turn. GitHub allows big content via splitting.
+- Implemented in scripts/git_sync.sh: sizecheck | pack <file> | unpack <dir> | drop <file>, plus file_size_guard (blocks push/init at >=95MB, warns >=45MB) and workspace_guard (warns >=112MB, lists top offenders).
+- pack produces large/<name>.parts/ with .part-NNN chunks (90MB), .sha256, manifest.txt, reassemble.sh; adds original to .git/info/exclude so it cannot be re-staged; drop verifies sha256 before deleting.
+- Tested end-to-end in /tmp: pack -> push -> drop -> fresh clone -> reassemble -> BYTE-IDENTICAL sha256. Guards verified to block and unstage oversize files. restored/ gitignored.
+- .gitattributes: binary/-diff/-merge for large/**/*.part-*; many more binary types. .gitignore: +restored/, webm/avi/m4v/flac, segments/.
+- Docs: WORKSPACE_BUDGET.md (limits, delete order, video segmentation recipe, GitHub ceilings).
+- Workspace now: 20MB excl .git / 128MB cap. Head bfbf515.
+---

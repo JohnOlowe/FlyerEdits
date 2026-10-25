@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-10-25T10:15:02.907384",
+  "last_updated": "2026-10-25T10:38:55.512819",
   "turn_number": 1.3000000000000003,
   "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
   "project_type": "video_and_graphics_editing",
@@ -57,10 +57,9 @@
     "memory/heirs_in_christ/background_1280x800.jpg",
     "memory/renders/heirs_background_1280x800.png"
   ],
-  "last_action": "Sync fully live+verified; repo hygiene done; head 448e156",
+  "last_action": "Added large-file split workflow (pack/unpack/drop/sizecheck) + workspace 128MB guard; documented in WORKSPACE_BUDGET.md",
   "next_steps": [
-    "User decision: keep repo public (ruleset enforced, free) vs private (needs Pro for enforcement)",
-    "User decision: rotate the PAT since it appeared in chat",
+    "Every turn: sizecheck at start and end; keep workspace under 112MB; pack+drop anything >=95MB",
     "Resume layer build: title typography, scroll banner, scripture line, king figures, footer band, logos"
   ],
   "recovery_point": "Background v3 complete and exported",
@@ -97,5 +96,31 @@
       "token never in any tracked file (verified with git grep)"
     ],
     "ruleset_scope_note": "targets ~ALL branches in FlyerEdits \u2014 no branch there can be force-pushed or deleted, including temp branches"
+  },
+  "size_rules": {
+    "workspace_cap_mb": 128,
+    "workspace_soft_line_mb": 112,
+    "github_file_cap_mb": 100,
+    "split_chunk_mb": 90,
+    "guard_blocks_at_mb": 95,
+    "warn_at_mb": 45,
+    "commands": [
+      "sizecheck",
+      "pack <file>",
+      "unpack <dir>",
+      "drop <file>"
+    ],
+    "delete_order": [
+      "segments/ raw_video/ *.mov",
+      "rejected drafts",
+      "restored/",
+      "layer composites"
+    ],
+    "never_delete": [
+      "CONTEXT.md",
+      "TURN_LOG.md",
+      "checkpoint.json",
+      "scripts/"
+    ]
   }
 }
