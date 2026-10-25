@@ -10,9 +10,20 @@
 *.key
 id_ed25519*
 id_rsa*
-# python
+# build / cache dirs (never commit)
+.cache/
+.local/
+.npm/
+.arena/
+.playwright-cli/
 __pycache__/
 *.pyc
+node_modules/
+.venv/
+dist/
+build/
+out/
+target/
 # os
 .DS_Store
 Thumbs.db
