@@ -1,8 +1,13 @@
-# token / credentials — never commit
+# token / credentials - never commit
 .git-credentials
 .netrc
 *.token
 .env
+.ssh/
+*.pem
+*.key
+id_ed25519*
+id_rsa*
 # python
 __pycache__/
 *.pyc

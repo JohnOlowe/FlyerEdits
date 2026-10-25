@@ -37,3 +37,24 @@
 ---
 
 **[AUTOSAVE 2026-10-25T09:08:14.326158]** Turn 01 complete — Heirs background v3 delivered, manifest + context updated
+
+---
+**[2026-10-25 09:45 WAT] TURN 02 — GITHUB SYNC SETUP**
+- User asked how to create a minimum-access single-repo token + disable force pushing, for pull-at-start / push-at-end each turn.
+- GitHub connector is NOT available on this platform -> token-based HTTPS (or deploy key) is the route.
+- Wrote `GITHUB_SYNC_SETUP.md`: fine-grained PAT scoped to 1 repo, Contents: Read&write only; ruleset "Block force pushes" + "Restrict deletions" with empty bypass list; plan caveat (private repos need Pro/Team); deploy-key alternative; token hygiene.
+- Wrote `scripts/git_sync.sh` (init/pull/push/status/doctor). Tested end-to-end against a local bare remote in /tmp: two pushes + pull + status all clean. Contains no --force flags.
+- Status: BLOCKED on user creating repo + token.
+---
+
+**[AUTOSAVE 2026-10-25T09:13:40.748104]** Turn 02 saved: GitHub sync guide + git_sync.sh tested
+
+---
+**[2026-10-25 10:05 WAT] TURN 03 — FORCE-PUSH SCOPING + DEPLOY KEY Q&A**
+- Q1 answered: force-push block is scoped by using a REPOSITORY ruleset (repo Settings > Rules) not an organization one. Only that repo affected; other repos and personal force-push habits unchanged. Block applies to targeted branches only; --force-with-lease also blocked. Escape hatch = set ruleset Disabled in browser (agent token has no Administration permission so cannot).
+- Q2 answered: deploy key requirements + pros/cons vs fine-grained PAT; recommendation = deploy key for this use case.
+- Code: scripts/git_sync.sh now has `keygen` (ed25519 -> ~/.ssh/arena_deploy_ed25519) and SSH deploy-key mode (pins repo-local core.sshCommand with IdentitiesOnly). .gitignore extended with .ssh/, *.pem, *.key, id_ed25519*. Tested: keygen OK, SSH init OK, keyscan OK, .ssh ignored by git, https/file-remote regression OK.
+- Doc: GITHUB_SYNC_SETUP.md rewritten (sections A-E).
+---
+
+**[AUTOSAVE 2026-10-25T09:45:31.960570]** Turn 03 saved: repo-scoped ruleset explanation + deploy key support in git_sync.sh

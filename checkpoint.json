@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-10-25T09:08:14.326158",
-  "turn_number": 1.1,
+  "last_updated": "2026-10-25T09:45:31.960570",
+  "turn_number": 1.3000000000000003,
   "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
   "project_type": "video_and_graphics_editing",
   "machine_status": "unstable_crashes_mid_turn_and_between_turns",
@@ -57,11 +57,32 @@
     "memory/heirs_in_christ/background_1280x800.jpg",
     "memory/renders/heirs_background_1280x800.png"
   ],
-  "last_action": "Turn 01 complete \u2014 Heirs background v3 delivered, manifest + context updated",
+  "last_action": "Turn 03 saved: repo-scoped ruleset explanation + deploy key support in git_sync.sh",
   "next_steps": [
-    "Awaiting user approval / tweaks on background",
-    "Next layers likely: title typography 'HEIRS IN CHRIST', scroll 'THEME EXPOSITION' banner, scripture Romans 8:16-17, crown figures / king row, footer band with 8:30AM SUNDAY / BELLO DOME details, Foursquare logo top",
-    "All future layers must stay 1280x800 and be saved as separate transparent PNGs"
+    "User picks PAT or deploy key",
+    "Deploy key path: run ./scripts/git_sync.sh keygen, paste pubkey to GitHub with write access, then init with git@ URL",
+    "Add repository ruleset protect-main with Block force pushes, bypass empty",
+    "Resume layer build: title typography, scroll banner, scripture line, king figures, footer band, logos"
   ],
-  "recovery_point": "Background v3 complete and exported"
+  "recovery_point": "Background v3 complete and exported",
+  "github_sync": {
+    "status": "awaiting_user_token_and_repo",
+    "repo_url": null,
+    "auth_method": "undecided \u2014 deploy key recommended, PAT as alternative",
+    "script": "scripts/git_sync.sh",
+    "guide": "GITHUB_SYNC_SETUP.md",
+    "pull_at_turn_start": true,
+    "push_at_turn_end": true,
+    "mid_turn_pushes": true,
+    "force_push": "blocked_by_design_in_script; server-side ruleset pending user setup",
+    "force_push_scope": "repository-level ruleset only (Settings > Rules inside the repo); other repos unaffected",
+    "script_features": [
+      "init (https or ssh)",
+      "keygen",
+      "pull",
+      "push",
+      "status",
+      "doctor"
+    ]
+  }
 }

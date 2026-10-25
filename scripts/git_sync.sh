@@ -8,10 +8,15 @@
 #   ./scripts/git_sync.sh push "msg"    # END of turn
 #   ./scripts/git_sync.sh status
 #   ./scripts/git_sync.sh doctor
+#
+#   Deploy-key (SSH) mode:
+#   ./scripts/git_sync.sh keygen           # make an ed25519 keypair, print pubkey
+#   ./scripts/git_sync.sh init git@github.com:<you>/<repo>.git
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-/home/user}"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/arena_deploy_ed25519}"
 BRANCH="${BRANCH:-main}"
 cd "$REPO_DIR"
 
@@ -43,16 +48,32 @@ init)
   # keep the token out of snapshot-tracked files when using HTTPS
   git config credential.helper store
 
+  # if it's an SSH remote, pin the deploy key for this repo only
+  if printf '%s' "$URL" | grep -qE '^(git@|ssh://)'; then
+    [ -f "$SSH_KEY" ] || die "SSH remote but no key at $SSH_KEY - run: $0 keygen"
+    mkdir -p "$HOME/.ssh"; chmod 700 "$HOME/.ssh"
+    ssh-keyscan -H github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+    sort -u "$HOME/.ssh/known_hosts" -o "$HOME/.ssh/known_hosts" 2>/dev/null || true
+    chmod 644 "$HOME/.ssh/known_hosts" 2>/dev/null || true
+    git config core.sshCommand "ssh -i $SSH_KEY -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new"
+    ok "using deploy key $SSH_KEY for this repo only"
+  fi
+
   git remote get-url origin >/dev/null 2>&1 \
     && git remote set-url origin "$URL" \
     || git remote add origin "$URL"
 
   cat > .gitignore <<'EOF'
-# token / credentials — never commit
+# token / credentials - never commit
 .git-credentials
 .netrc
 *.token
 .env
+.ssh/
+*.pem
+*.key
+id_ed25519*
+id_rsa*
 # python
 __pycache__/
 *.pyc
@@ -122,6 +143,25 @@ push)
   ok "pushed $(git rev-parse --short HEAD)"
   ;;
 
+keygen)
+  mkdir -p "$HOME/.ssh"; chmod 700 "$HOME/.ssh"
+  if [ -f "$SSH_KEY" ]; then
+    warn "key already exists at $SSH_KEY - printing public half"
+  else
+    say "generating ed25519 deploy key"
+    ssh-keygen -t ed25519 -C "arena-deploy-$(hostname)-$(date +%Y%m%d)" -f "$SSH_KEY" -N "" -q
+    chmod 600 "$SSH_KEY"; chmod 644 "$SSH_KEY.pub"
+    ok "created $SSH_KEY"
+  fi
+  echo
+  echo "--- paste this into GitHub: repo > Settings > Deploy keys > Add deploy key ---"
+  cat "$SSH_KEY.pub"
+  echo "----------------------------------------------------------------------------"
+  echo
+  echo "Tick [x] Allow write access before saving."
+  echo "Then run: $0 init git@github.com:<you>/<repo>.git"
+  ;;
+
 status)
   need_repo
   echo "repo:    $REPO_DIR"
@@ -142,6 +182,16 @@ doctor)
   git push --dry-run origin "HEAD:$BRANCH" >/dev/null 2>&1 \
     && ok "push permitted" \
     || warn "push dry-run failed — check Contents: Read and write"
+  case "$(git remote get-url origin)" in
+    git@*|ssh://*)
+      say "SSH mode - testing deploy key"
+      if ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 | grep -qi "successfully authenticated"; then
+        ok "deploy key accepted by GitHub"
+      else
+        warn "ssh -T git@github.com did not confirm auth (git may still work)"
+      fi
+      ;;
+  esac
   say "confirming script will never force push"
   if grep -Eq 'git[[:space:]]+push[^|;]*--force' "$0"; then
     warn "a git push with --force exists in this script — remove it!"
@@ -151,6 +201,6 @@ doctor)
   ;;
 
 *)
-  die "unknown command '$cmd' (init|pull|push|status|doctor)"
+  die "unknown command '$cmd' (init|keygen|pull|push|status|doctor)"
   ;;
 esac
