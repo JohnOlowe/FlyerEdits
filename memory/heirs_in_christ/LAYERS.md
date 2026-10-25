@@ -39,3 +39,36 @@ python3 memory/heirs_in_christ/build_layers_v3.py
 3. mist
 4. burst
 5. grade (vignette + grain)
+
+
+---
+
+# STAGE 2 — TITLE TYPOGRAPHY (`layers4/`, `final4/`)
+
+Canvas 1280×800. Font: **Anton** (SIL OFL, `memory/fonts/Anton-Regular.ttf`),
+rendered at 2× and downsampled. Slight italic shear −6°.
+
+| # | Layer file | Composite snapshot | What it is |
+|---|---|---|---|
+| L06 | `layers4/06_title_glow.png` | `final4/06_composite.png` | soft violet halo (#6A5AD6) behind the type, 26px blur |
+| L07 | `layers4/07_heirs_in.png` | `final4/07_composite.png` | "HEIRS IN" — Anton 150px, tracking +0.20em, light wear |
+| L08 | `layers4/08_christ.png` | `final4/08_composite.png` | "CHRIST" — Anton 320px, tracking +0.02em, gradient ink |
+| L09 | `layers4/09_distress_mask.png` | — | the wear mask on its own (white = ink survives), reusable |
+| — | `layers4/10_TITLE_BLOCK.png` | `final4/08_composite.png` | glow + both lines flattened, fully transparent bg |
+
+**Exports**
+- `title_block_1280x800.png` — the title alone, transparent (stack this on anything)
+- `title_on_background_preview.png` — title over the approved background
+
+**Measurements**
+- "HEIRS IN" ink box: 667 × 132 @ centre y=208
+- "CHRIST" ink box: 858 × 280 @ centre y=432
+- gap between lines ≈ 36 px; whole block spans y≈142…575
+
+**Ink colour:** gradient `#5043B2` → `#241F66` top-to-bottom, +10% upper-left light
+**Wear:** multi-octave noise edge erosion (0.32) + fine speckle holes (0.22–0.30)
+
+**Rebuild:** `python3 memory/heirs_in_christ/build_title_v1.py`
+
+**Note:** first run produced invisible type — `distress()` normalised an already-normalised
+0..1 array a second time, which zeroed every pixel. Fixed by auto-detecting the input range.

@@ -98,3 +98,14 @@
 - WORKSPACE_BUDGET.md section C rewritten as a correction.
 - Head dd44f2c.
 ---
+
+---
+**[2026-10-25 13:40 WAT] TURN 07 — TITLE TYPOGRAPHY (stage 2)**
+- Downloaded SIL-OFL fonts to memory/fonts: Anton, Archivo Black, Oswald.
+- New script build_title_v1.py -> layers4/ + final4/.
+- L06 violet halo, L07 "HEIRS IN" (Anton 150px, +0.20em, wear .30), L08 "CHRIST" (Anton 320px, +0.02em, wear .22), L09 reusable distress mask, L10 flattened title block.
+- Bug found+fixed: distress() re-normalised an already 0..1 alpha array -> fully transparent type. Now auto-detects range.
+- Two refinement passes: raised sizes (132->150, 300->320), tightened line gap, cut wear ~10x (was reading as heavy concrete texture, flyer is subtler).
+- Exports: title_block_1280x800.png (transparent), title_on_background_preview.png.
+- Next: gold scroll "THEME — EXPOSITION".
+---

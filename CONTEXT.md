@@ -1,12 +1,12 @@
 # 🎬 PROJECT CONTEXT — CRASH-PROOF MEMORY
 > CHECKED AT START OF EVERY TURN, UPDATED MID-TURN.
-> Last Updated: 2026-10-25 09:20 WAT (Africa/Lagos) — Turn 01
+> Last Updated: 2026-10-25 13:40 WAT (Africa/Lagos) — Turn 07
 
 ## CURRENT PROJECT
 - **Name:** Heirs in Christ — Sunday Service (Foursquare Students' Fellowship, UI)
 - **Source:** `uploads/IMG-20261024-WA0000.jpg` (flyer, 1280×1600 portrait)
 - **Target:** projector visuals, **1280×800 landscape**
-- **Status:** Stage 1 DONE — background rebuilt layer-by-layer (v3 approved)
+- **Status:** Stage 1 DONE (background v3) · Stage 2 DONE (title typography)
 
 ## WORKFLOW RULES (LOCKED)
 1. Read `CONTEXT.md` + `TURN_LOG.md` + `checkpoint.json` at START of every turn
@@ -42,12 +42,28 @@
 | L04 | Heavenly burst | `layers3/04_burst_overlay.png` | 6-octave diffuse bloom @ (640,528) + shaft + rays |
 | L05 | Grade | `final3/05_FINAL_background.png` | vignette + S-curve + 2.2σ grain |
 
-**DELIVERABLE:** `memory/heirs_in_christ/background_1280x800.png` (+ .jpg, master in `memory/renders/`)
+### Stage 2 — title type (`layers4/`, `final4/`)
+| # | Layer | File | Notes |
+|---|-------|------|-------|
+| L06 | Title glow | `layers4/06_title_glow.png` | violet #6A5AD6 halo, 26px blur |
+| L07 | "HEIRS IN" | `layers4/07_heirs_in.png` | Anton 150px, tracking +0.20em, wear 0.30 |
+| L08 | "CHRIST" | `layers4/08_christ.png` | Anton 320px, tracking +0.02em, wear 0.22 |
+| L09 | Distress mask | `layers4/09_distress_mask.png` | reusable wear mask |
+| — | Title block | `layers4/10_TITLE_BLOCK.png` | glow+type flattened, transparent |
+
+Fonts: `memory/fonts/Anton-Regular.ttf` (+ Archivo Black, Oswald as alternates).
+Build script: `build_title_v1.py`
+
+**DELIVERABLES**
+- `memory/heirs_in_christ/background_1280x800.png` — clean background
+- `memory/heirs_in_christ/title_block_1280x800.png` — title, transparent
+- `memory/heirs_in_christ/title_on_background_preview.png` — the two stacked
 
 ## GENERATION LOG
 | Turn | Action | Output |
 |------|--------|--------|
 | 01 | Rebuilt flyer background at 1280×800, 3 drafts (v1/v2 rejected, v3 approved) | background_1280x800.png |
+| 07 | Title typography layer-by-layer (glow, HEIRS IN, CHRIST, wear mask) | title_block_1280x800.png |
 
 ## MUST STAY TRUE (from original flyer)
 - Brand: Foursquare Students' Fellowship, UI — logos top centre
@@ -58,9 +74,9 @@
 - Colour language: cyan/blue sky, warm-red left halftone, violet right halftone, gold scroll
 
 ## NEXT STEPS
-1. Await approval / tweaks on background
+1. Await approval / tweaks on the title (size, weight, wear level, colour)
 2. Build remaining layers as separate transparent PNGs:
-   - title typography "HEIRS IN CHRIST" (purple, distressed)
+   - ~~title typography "HEIRS IN CHRIST"~~ DONE
    - gold scroll banner "THEME — EXPOSITION"
    - scripture line Romans 8:16–17
    - crown/king figure row (AI-generated, keep style consistent)

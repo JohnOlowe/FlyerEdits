@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-10-25T10:44:55.162694",
+  "last_updated": "2026-10-25T10:50:07.874992",
   "turn_number": 1.3000000000000003,
   "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
   "project_type": "video_and_graphics_editing",
@@ -50,17 +50,48 @@
       "id": "L05",
       "file": "memory/heirs_in_christ/final3/05_FINAL_background.png",
       "desc": "grade: vignette, s-curve, grain"
+    },
+    {
+      "id": "L06",
+      "file": "memory/heirs_in_christ/layers4/06_title_glow.png",
+      "desc": "violet halo behind title"
+    },
+    {
+      "id": "L07",
+      "file": "memory/heirs_in_christ/layers4/07_heirs_in.png",
+      "desc": "'HEIRS IN' Anton 150px + wear"
+    },
+    {
+      "id": "L08",
+      "file": "memory/heirs_in_christ/layers4/08_christ.png",
+      "desc": "'CHRIST' Anton 320px + wear"
+    },
+    {
+      "id": "L09",
+      "file": "memory/heirs_in_christ/layers4/09_distress_mask.png",
+      "desc": "reusable distress mask"
+    },
+    {
+      "id": "L10",
+      "file": "memory/heirs_in_christ/layers4/10_TITLE_BLOCK.png",
+      "desc": "title block, transparent"
     }
   ],
   "renders": [
     "memory/heirs_in_christ/background_1280x800.png",
     "memory/heirs_in_christ/background_1280x800.jpg",
-    "memory/renders/heirs_background_1280x800.png"
+    "memory/renders/heirs_background_1280x800.png",
+    "memory/heirs_in_christ/title_block_1280x800.png",
+    "memory/heirs_in_christ/title_on_background_preview.png"
   ],
-  "last_action": "Corrected the 128MB misconception: it is a SNAPSHOT cap, not a disk cap. Big files can live mid-turn. Added `bulk` (split+push to assets branch from /var/tmp) and guarded `pack`.",
+  "last_action": "Stage 2 complete: distressed purple title typography, 4 layers + transparent title block",
   "next_steps": [
-    "Resume layer build: title typography, scroll banner, scripture line, king figures, footer band, logos",
-    "Use `bulk` for any video/render over ~40MB so main and the workspace stay lean"
+    "User review of title (size/weight/wear/colour)",
+    "Gold scroll banner 'THEME \u2014 EXPOSITION'",
+    "Scripture line Romans 8:16-17",
+    "King/crown figure row",
+    "Footer navy band + service details",
+    "Foursquare logos strip"
   ],
   "recovery_point": "Background v3 complete and exported",
   "github_sync": {
@@ -127,5 +158,10 @@
     "asset_branch": "assets",
     "pack_safe_limit_mb": 40,
     "measured_test": "250MB master -> 3 chunks on assets branch; workspace stayed 1MB; restored byte-identical from a fresh clone"
+  },
+  "fonts": {
+    "Anton": "memory/fonts/Anton-Regular.ttf",
+    "ArchivoBlack": "memory/fonts/ArchivoBlack-Regular.ttf",
+    "Oswald": "memory/fonts/Oswald-Variable.ttf"
   }
 }
