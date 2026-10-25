@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-10-25T09:45:31.960570",
+  "last_updated": "2026-10-25T10:14:41.444610",
   "turn_number": 1.3000000000000003,
   "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
   "project_type": "video_and_graphics_editing",
@@ -57,32 +57,38 @@
     "memory/heirs_in_christ/background_1280x800.jpg",
     "memory/renders/heirs_background_1280x800.png"
   ],
-  "last_action": "Turn 03 saved: repo-scoped ruleset explanation + deploy key support in git_sync.sh",
+  "last_action": "GitHub sync LIVE and verified: token scoped to JohnOlowe/FlyerEdits only, ruleset protect-push active, force push rejected (GH013), normal push works",
   "next_steps": [
-    "User picks PAT or deploy key",
-    "Deploy key path: run ./scripts/git_sync.sh keygen, paste pubkey to GitHub with write access, then init with git@ URL",
-    "Add repository ruleset protect-main with Block force pushes, bypass empty",
+    "User decision: keep repo public (ruleset enforced, free) vs private (needs Pro for enforcement)",
+    "User decision: rotate the PAT since it appeared in chat",
     "Resume layer build: title typography, scroll banner, scripture line, king figures, footer band, logos"
   ],
   "recovery_point": "Background v3 complete and exported",
   "github_sync": {
-    "status": "awaiting_user_token_and_repo",
-    "repo_url": null,
-    "auth_method": "undecided \u2014 deploy key recommended, PAT as alternative",
+    "status": "LIVE",
+    "account": "JohnOlowe",
+    "repo": "https://github.com/JohnOlowe/FlyerEdits",
+    "repo_visibility": "public",
+    "auth_method": "fine-grained PAT, Contents: read+write only",
+    "token_location": "~/.git-credentials (git-ignored, excluded from snapshots)",
+    "scope_verified": "write OK on FlyerEdits only; 403 'Resource not accessible by personal access token' on all 13 other repos",
+    "admin_verified": "no Administration permission: branch protection/actions/keys endpoints all 403 -> token cannot disable the ruleset",
+    "ruleset": {
+      "id": 25817236,
+      "name": "protect-push",
+      "enforcement": "active",
+      "targets": "~ALL branches",
+      "rules": [
+        "deletion",
+        "non_fast_forward"
+      ],
+      "bypass_actors": [],
+      "current_user_can_bypass": "never"
+    },
+    "force_push_test": "git push --force -> REJECTED: GH013 Cannot force-push to this branch",
+    "normal_push_test": "OK (fast-forward pushes succeed)",
     "script": "scripts/git_sync.sh",
     "guide": "GITHUB_SYNC_SETUP.md",
-    "pull_at_turn_start": true,
-    "push_at_turn_end": true,
-    "mid_turn_pushes": true,
-    "force_push": "blocked_by_design_in_script; server-side ruleset pending user setup",
-    "force_push_scope": "repository-level ruleset only (Settings > Rules inside the repo); other repos unaffected",
-    "script_features": [
-      "init (https or ssh)",
-      "keygen",
-      "pull",
-      "push",
-      "status",
-      "doctor"
-    ]
+    "head": null
   }
 }

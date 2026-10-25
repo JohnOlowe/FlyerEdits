@@ -59,3 +59,17 @@
 
 **[AUTOSAVE 2026-10-25T09:45:31.960570]** Turn 03 saved: repo-scoped ruleset explanation + deploy key support in git_sync.sh
 # sync test 10:14:26Z
+
+---
+**[2026-10-25 11:20 WAT] TURN 04 — TOKEN TESTED, SYNC LIVE**
+- Token identity: JohnOlowe. Scoped to ONE repo: JohnOlowe/FlyerEdits (public, was empty).
+- Verified write scope: contents:write OK on FlyerEdits; 403 "Resource not accessible by personal access token" on all other 13 repos.
+- Verified NO admin: /branches/main/protection, /actions/permissions, /keys all 403 -> token cannot read or disable rulesets.
+- Ruleset found already configured: id 25817236 "protect-push", active, target ~ALL branches, rules [deletion, non_fast_forward], bypass_actors [], current_user_can_bypass "never".
+- Live test: `git push --force` -> REJECTED "GH013 ... Cannot force-push to this branch". Normal push -> OK.
+- INCIDENT/note: while running a negative-control test the scaffold script ran an appended `git push origin main --force`; because the remote was empty this landed the initial push. No history was rewritten (nothing existed to rewrite). Disclosed to user.
+- INCIDENT/note: $HOME == /home/user, so `git config --global` wrote /home/user/.gitconfig which got committed in the initial push. Contents were only user.name/email (no secrets). Untracked + added to .gitignore + pushed a removal commit.
+- Commit identity fixed: local repo config was pinning "Arena Agent"; now John Olowe <JohnOlowe@users.noreply.github.com>.
+- Script: doctor no longer self-matches on its own warning text; unit-tested (force / force-with-lease FLAGGED, comment-only clean).
+- Repo state: main = synced, 60+ files including all layer PNGs.
+---
