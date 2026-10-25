@@ -87,3 +87,14 @@
 - Docs: WORKSPACE_BUDGET.md (limits, delete order, video segmentation recipe, GitHub ceilings).
 - Workspace now: 20MB excl .git / 128MB cap. Head bfbf515.
 ---
+
+---
+**[2026-10-25 13:05 WAT] TURN 06 — CORRECTION: BIG FILES CAN LIVE MID-TURN**
+- User was right: the 128MB figure is a turn-END snapshot cap, not a live-disk cap.
+- Measured: / and /var/tmp have ~21GB free (25GB disk); /tmp is a 992MB tmpfs. Wrote 300MB to /var/tmp to prove it.
+- Real constraint discovered by testing: splitting does NOT reduce bytes, and .git under /home/user counts toward the cap — a naive `bulk` that pulled chunks into the workspace ballooned it to 501MB. Fixed by pushing chunks to a separate `assets` branch (pull on main never fetches them).
+- New command: `bulk <file> [--rm]` -> clones into /var/tmp, splits at 90MB, pushes to origin/assets, verifies chunk count + branch SHA, copies only metadata (3-4KB) to main, deletes source. `pack` now refuses >= PACK_SAFE_MB (40MB) and points to bulk.
+- Verified: 250MB master -> 3 chunks, workspace stayed 1MB (files 1MB + .git 1MB), fresh clone -b assets --single-branch reassembled BYTE-IDENTICAL. Second bulk fast-forwarded on assets fine.
+- WORKSPACE_BUDGET.md section C rewritten as a correction.
+- Head dd44f2c.
+---

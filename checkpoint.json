@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-10-25T10:38:55.512819",
+  "last_updated": "2026-10-25T10:44:55.162694",
   "turn_number": 1.3000000000000003,
   "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
   "project_type": "video_and_graphics_editing",
@@ -57,10 +57,10 @@
     "memory/heirs_in_christ/background_1280x800.jpg",
     "memory/renders/heirs_background_1280x800.png"
   ],
-  "last_action": "Added large-file split workflow (pack/unpack/drop/sizecheck) + workspace 128MB guard; documented in WORKSPACE_BUDGET.md",
+  "last_action": "Corrected the 128MB misconception: it is a SNAPSHOT cap, not a disk cap. Big files can live mid-turn. Added `bulk` (split+push to assets branch from /var/tmp) and guarded `pack`.",
   "next_steps": [
-    "Every turn: sizecheck at start and end; keep workspace under 112MB; pack+drop anything >=95MB",
-    "Resume layer build: title typography, scroll banner, scripture line, king figures, footer band, logos"
+    "Resume layer build: title typography, scroll banner, scripture line, king figures, footer band, logos",
+    "Use `bulk` for any video/render over ~40MB so main and the workspace stay lean"
   ],
   "recovery_point": "Background v3 complete and exported",
   "github_sync": {
@@ -121,6 +121,11 @@
       "TURN_LOG.md",
       "checkpoint.json",
       "scripts/"
-    ]
+    ],
+    "note": "128MB is the turn-end snapshot cap only. Live disk: / and /var/tmp ~21GB free; /tmp tmpfs 992MB.",
+    "bulk_workflow": "./scripts/git_sync.sh bulk <file> --rm  -> splits in /var/tmp, pushes to 'assets' branch, verifies, deletes source, commits only metadata to main",
+    "asset_branch": "assets",
+    "pack_safe_limit_mb": 40,
+    "measured_test": "250MB master -> 3 chunks on assets branch; workspace stayed 1MB; restored byte-identical from a fresh clone"
   }
 }
