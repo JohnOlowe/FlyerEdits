@@ -73,3 +73,6 @@
 - Script: doctor no longer self-matches on its own warning text; unit-tested (force / force-with-lease FLAGGED, comment-only clean).
 - Repo state: main = synced, 60+ files including all layer PNGs.
 ---
+
+**TURN 04 cleanup:** removed pip cache from tracking, extended .gitignore (.cache/, .local/, .npm/, .venv/, node_modules/, dist/, build/, out/, target/). Verified with `git grep` that the real token appears in ZERO tracked files. Repo head now 448e156, 60 tracked files.
+**To resume:** `./scripts/git_sync.sh pull` at start of turn, `push "<what changed>"` at end.

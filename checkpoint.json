@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-10-25T10:14:41.444610",
+  "last_updated": "2026-10-25T10:15:02.907384",
   "turn_number": 1.3000000000000003,
   "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
   "project_type": "video_and_graphics_editing",
@@ -57,7 +57,7 @@
     "memory/heirs_in_christ/background_1280x800.jpg",
     "memory/renders/heirs_background_1280x800.png"
   ],
-  "last_action": "GitHub sync LIVE and verified: token scoped to JohnOlowe/FlyerEdits only, ruleset protect-push active, force push rejected (GH013), normal push works",
+  "last_action": "Sync fully live+verified; repo hygiene done; head 448e156",
   "next_steps": [
     "User decision: keep repo public (ruleset enforced, free) vs private (needs Pro for enforcement)",
     "User decision: rotate the PAT since it appeared in chat",
@@ -89,6 +89,13 @@
     "normal_push_test": "OK (fast-forward pushes succeed)",
     "script": "scripts/git_sync.sh",
     "guide": "GITHUB_SYNC_SETUP.md",
-    "head": null
+    "head": "448e156",
+    "tracked_files": 60,
+    "hygiene_done": [
+      ".gitconfig untracked+ignored (no secrets in it)",
+      "pip cache untracked, build/cache dirs ignored",
+      "token never in any tracked file (verified with git grep)"
+    ],
+    "ruleset_scope_note": "targets ~ALL branches in FlyerEdits \u2014 no branch there can be force-pushed or deleted, including temp branches"
   }
 }
