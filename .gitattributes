@@ -1,7 +1,16 @@
+# binary types — never attempt text diffs
 *.png binary
 *.jpg binary
 *.jpeg binary
 *.webp binary
 *.psd binary
 *.tif binary
-*.mp4 binary diff=lfs
+*.tiff binary
+*.exr binary
+*.mp4 binary
+*.mov binary
+*.wav binary
+*.mp3 binary
+# split chunks of large files: binary, no diff, no merge
+large/**/*.part-* binary -diff -merge
+large/**/* -text

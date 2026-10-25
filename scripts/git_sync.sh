@@ -9,6 +9,12 @@
 #   ./scripts/git_sync.sh status
 #   ./scripts/git_sync.sh doctor
 #
+#   Large files (GitHub caps a single file at 100 MB):
+#   ./scripts/git_sync.sh pack <file>      # split into <=90 MB chunks under large/
+#   ./scripts/git_sync.sh unpack <file>    # reassemble + verify sha256
+#   ./scripts/git_sync.sh drop <file>      # delete local copy once packed
+#   ./scripts/git_sync.sh sizecheck        # workspace vs 128 MB, repo vs limits
+#
 #   Deploy-key (SSH) mode:
 #   ./scripts/git_sync.sh keygen           # make an ed25519 keypair, print pubkey
 #   ./scripts/git_sync.sh init git@github.com:<you>/<repo>.git
@@ -17,6 +23,13 @@ set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-/home/user}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/arena_deploy_ed25519}"
+
+# GitHub rejects any single file >= 100 MB; we split before that.
+MAX_FILE_MB="${MAX_FILE_MB:-95}"    # hard stop at push time
+WARN_FILE_MB="${WARN_FILE_MB:-45}"  # soft warning
+CHUNK_MB="${CHUNK_MB:-90}"          # split size
+WORKSPACE_MB="${WORKSPACE_MB:-128}" # sandbox cap
+WORKSPACE_SOFT_MB="${WORKSPACE_SOFT_MB:-112}"
 BRANCH="${BRANCH:-main}"
 cd "$REPO_DIR"
 
@@ -28,6 +41,51 @@ die() { printf '\033[1;31m✘ %s\033[0m\n' "$*" >&2; exit 1; }
 need_repo() {
   [ -d .git ] || die "no git repo in $REPO_DIR — run: $0 init <remote-url>"
   git remote get-url origin >/dev/null 2>&1 || die "no 'origin' remote configured"
+}
+
+# ── size guard: runs before every commit ─────────────────────
+file_size_guard() {
+  local out; out=$(mktemp)
+  git diff --cached --name-only --diff-filter=ACM 2>/dev/null | while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    local b mb
+    b=$(stat -c%s "$f" 2>/dev/null || echo 0)
+    mb=$(( b / 1048576 ))
+    if [ "$mb" -ge "$MAX_FILE_MB" ]; then
+      printf 'BAD|%s|%s\n' "$mb" "$f" >> "$out"
+    elif [ "$mb" -ge "$WARN_FILE_MB" ]; then
+      printf 'WARN|%s|%s\n' "$mb" "$f" >> "$out"
+    fi
+  done
+  local bad=0 warned=0
+  if [ -s "$out" ]; then
+    while IFS='|' read -r kind mb f; do
+      if [ "$kind" = "BAD" ]; then
+        printf '\033[1;31m✘ %5s MB  %s\033[0m\n' "$mb" "$f"; bad=$((bad+1))
+      else
+        printf '\033[1;33m! %5s MB  %s\033[0m\n' "$mb" "$f"; warned=$((warned+1))
+      fi
+    done < "$out"
+  fi
+  rm -f "$out"
+  if [ "$bad" -gt 0 ]; then
+    git reset -q
+    die "$bad file(s) >= ${MAX_FILE_MB} MB — GitHub would reject them.
+   Split first:  $0 pack <file>     then:  $0 drop <file>   then push again"
+  fi
+  [ "$warned" -gt 0 ] && warn "$warned large file(s) committed — fine, but history grows"
+  return 0
+}
+
+# ── workspace cap guard ──────────────────────────────────────
+workspace_guard() {
+  local used
+  used=$(du -sm --exclude=.git . 2>/dev/null | cut -f1)
+  [ -z "$used" ] && return 0
+  if [ "$used" -ge "$WORKSPACE_SOFT_MB" ]; then
+    warn "workspace at ${used} MB of ${WORKSPACE_MB} MB cap — clean up before the turn ends"
+    du -sm --exclude=.git ./* 2>/dev/null | sort -rn | head -5 | awk '{printf "     %s MB  %s\n", $1, $2}'
+  fi
 }
 
 cmd="${1:-status}"
@@ -80,6 +138,8 @@ __pycache__/
 # os
 .DS_Store
 Thumbs.db
+# reassembled output from large/*.parts — never commit
+restored/
 # big raw video masters (keep in Drive, export finals instead)
 raw_video/
 *.mov
@@ -93,10 +153,14 @@ EOF
 *.webp binary
 *.psd binary
 *.tif binary
-*.mp4 binary diff=lfs
+*.mp4 binary
+# split chunks of large files
+large/**/*.part-* binary -diff
+large/**/* -text
 EOF
 
   git add -A
+  file_size_guard
   git commit -q -m "chore: workspace initialised" || warn "nothing to commit"
   say "fetching remote state"
   if git fetch origin "$BRANCH" 2>/dev/null && git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
@@ -127,6 +191,8 @@ push)
   need_repo
   MSG="${2:-autosave $(date '+%Y-%m-%d %H:%M')}"
   git add -A
+  file_size_guard
+  workspace_guard
   if git diff --cached --quiet; then
     ok "nothing to commit"
   else
@@ -160,6 +226,97 @@ keygen)
   echo
   echo "Tick [x] Allow write access before saving."
   echo "Then run: $0 init git@github.com:<you>/<repo>.git"
+  ;;
+
+pack)
+  f="${2:-}"; [ -n "$f" ] || die "usage: $0 pack <file>"
+  [ -f "$f" ] || die "no such file: $f"
+  base=$(basename "$f")
+  dir="large/${base}.parts"
+  mkdir -p "$dir"
+  rm -f "$dir/${base}".part-*
+  say "splitting $base into ${CHUNK_MB} MB chunks"
+  split -b "${CHUNK_MB}M" -d -a 3 "$f" "$dir/${base}.part-"
+  n=$(find "$dir" -name "${base}.part-*" | wc -l)
+  bytes=$(stat -c%s "$f")
+  sha=$(sha256sum "$f" | cut -d' ' -f1)
+  printf '%s  %s\n' "$sha" "$base" > "$dir/${base}.sha256"
+  cat > "$dir/manifest.txt" <<MFT
+original: $f
+bytes: $bytes
+sha256: $sha
+chunks: $n
+chunk_size_mb: $CHUNK_MB
+generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+MFT
+  cat > "$dir/reassemble.sh" <<'RSEOF'
+#!/usr/bin/env bash
+# reassemble + verify, run from the repo root:  bash large/<name>.parts/reassemble.sh
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE=$(grep -m1 '^original:' "$DIR/manifest.txt" | sed -e 's|^original:[[:space:]]*||' -e 's|.*/||')
+OUT="restored/$BASE"
+mkdir -p restored
+cat "$DIR/${BASE}".part-* > "$OUT"
+echo "checking sha256…"
+got=$(sha256sum "$OUT" | cut -d' ' -f1)
+want=$(cut -d' ' -f1 "$DIR/${BASE}.sha256")
+if [ "$got" = "$want" ]; then echo "✔ restored $OUT (sha256 ok)"; else echo "✘ hash mismatch"; exit 1; fi
+RSEOF
+  chmod +x "$dir/reassemble.sh"
+  # keep the un-split original out of git without deleting it (local-only ignore)
+  mkdir -p .git/info
+  grep -qxF "$f" .git/info/exclude 2>/dev/null || echo "$f" >> .git/info/exclude
+  ok "packed: $base -> $dir ($n chunks, sha256 ${sha:0:12}…)"
+  echo "   next:  $0 push \"add large/$base\"   then   $0 drop $f"
+  ;;
+
+unpack)
+  dir="${2:-}"; [ -n "$dir" ] || die "usage: $0 unpack large/<name>.parts"
+  if [ -d "$dir" ]; then
+    [ -f "$dir/reassemble.sh" ] || die "$dir has no reassemble.sh"
+    bash "$dir/reassemble.sh"
+  elif [ -d "large/${dir}.parts" ]; then
+    bash "large/${dir}.parts/reassemble.sh"
+  else
+    die "no such parts dir: $dir"
+  fi
+  ;;
+
+drop)
+  f="${2:-}"; [ -n "$f" ] || die "usage: $0 drop <file>   (only works once packed)"
+  [ -f "$f" ] || die "no such file: $f"
+  base=$(basename "$f")
+  dir="large/${base}.parts"
+  [ -d "$dir" ] || die "not packed — run '$0 pack $f' first"
+  want=$(cut -d' ' -f1 "$dir/${base}.sha256" 2>/dev/null || true)
+  have=$(sha256sum "$f" | cut -d' ' -f1)
+  [ "$want" = "$have" ] || die "sha256 mismatch vs manifest — refusing to delete $f"
+  git add "$dir" >/dev/null 2>&1 || true
+  sz=$(du -sm "$f" | cut -f1)
+  rm -f "$f"
+  ok "dropped $f (freed ~${sz} MB); restore with: $0 unpack $dir"
+  workspace_guard
+  ;;
+
+sizecheck)
+  used=$(du -sm --exclude=.git . 2>/dev/null | cut -f1)
+  gitsz=$(du -sm .git 2>/dev/null | cut -f1)
+  tracked=$(git ls-files 2>/dev/null | wc -l)
+  echo "workspace (excl .git): ${used} MB / ${WORKSPACE_MB} MB sandbox cap"
+  echo ".git:                  ${gitsz} MB"
+  echo "tracked files:         ${tracked}"
+  echo "largest 8 files:"
+  find . -path ./.git -prune -o -type f -printf '%s %p\n' 2>/dev/null \
+    | sort -rn | head -8 | awk '{printf "  %6.1f MB  %s\n", $1/1048576, $2}'
+  echo "split chunks present:"
+  find large -name '*.part-*' 2>/dev/null | wc -l | awk '{print "  "$1" chunk(s)"}'
+  if [ "$used" -ge "$WORKSPACE_SOFT_MB" ]; then
+    warn "over the ${WORKSPACE_SOFT_MB} MB soft line — free space before ending the turn"
+  else
+    ok "within budget ($(( WORKSPACE_MB - used )) MB headroom)"
+  fi
   ;;
 
 status)
@@ -201,6 +358,6 @@ doctor)
   ;;
 
 *)
-  die "unknown command '$cmd' (init|keygen|pull|push|status|doctor)"
+  die "unknown command '$cmd' (init|keygen|pack|unpack|drop|sizecheck|pull|push|status|doctor)"
   ;;
 esac

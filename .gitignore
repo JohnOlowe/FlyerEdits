@@ -27,7 +27,15 @@ target/
 # os
 .DS_Store
 Thumbs.db
+# reassembled output from large/*.parts — never commit
+restored/
 # big raw video masters (keep in Drive, export finals instead)
 raw_video/
 *.mov
 *.mkv
+*.webm
+*.avi
+*.m4v
+*.flac
+# ffmpeg/segmented export scratch
+segments/
