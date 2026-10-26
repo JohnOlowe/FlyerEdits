@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-10-26T10:58:54.428472",
+  "last_updated": "2026-10-26T10:59:29.042203",
   "turn_number": 1.3000000000000003,
   "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
   "project_type": "video_and_graphics_editing",
@@ -84,7 +84,7 @@
     "memory/heirs_in_christ/title_block_1280x800.png",
     "memory/heirs_in_christ/title_on_background_preview.png"
   ],
-  "last_action": "Wrote CLAUDE.md \u2014 generic standing instructions for coding agents",
+  "last_action": "CLAUDE.md delivered; self-healing remote added after snapshot dropped .git/config",
   "next_steps": [
     "User review of title (size/weight/wear/colour)",
     "Gold scroll banner 'THEME \u2014 EXPOSITION'",
@@ -119,7 +119,7 @@
     "normal_push_test": "OK (fast-forward pushes succeed)",
     "script": "scripts/git_sync.sh",
     "guide": "GITHUB_SYNC_SETUP.md",
-    "head": "448e156",
+    "head": "6335109",
     "tracked_files": 60,
     "hygiene_done": [
       ".gitconfig untracked+ignored (no secrets in it)",
@@ -166,5 +166,11 @@
   },
   "deliverables": [
     "CLAUDE.md"
+  ],
+  "recovery_notes": [
+    "A new session may restore without .git/config or ~/.git-credentials.",
+    "git_sync.sh now re-adds origin from the tracked .gitremote file automatically.",
+    "Credential must be re-supplied manually (it is deliberately excluded from snapshots).",
+    "Re-run: chmod +x scripts/git_sync.sh if 'Permission denied'."
   ]
 }
