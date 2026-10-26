@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-10-25T10:50:07.874992",
+  "last_updated": "2026-10-26T10:58:54.428472",
   "turn_number": 1.3000000000000003,
   "project_name": "Heirs in Christ \u2014 Sunday Service (Foursquare Students' Fellowship, UI)",
   "project_type": "video_and_graphics_editing",
@@ -84,7 +84,7 @@
     "memory/heirs_in_christ/title_block_1280x800.png",
     "memory/heirs_in_christ/title_on_background_preview.png"
   ],
-  "last_action": "Stage 2 complete: distressed purple title typography, 4 layers + transparent title block",
+  "last_action": "Wrote CLAUDE.md \u2014 generic standing instructions for coding agents",
   "next_steps": [
     "User review of title (size/weight/wear/colour)",
     "Gold scroll banner 'THEME \u2014 EXPOSITION'",
@@ -163,5 +163,8 @@
     "Anton": "memory/fonts/Anton-Regular.ttf",
     "ArchivoBlack": "memory/fonts/ArchivoBlack-Regular.ttf",
     "Oswald": "memory/fonts/Oswald-Variable.ttf"
-  }
+  },
+  "deliverables": [
+    "CLAUDE.md"
+  ]
 }

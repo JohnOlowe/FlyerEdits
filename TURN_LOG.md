@@ -109,3 +109,8 @@
 - Exports: title_block_1280x800.png (transparent), title_on_background_preview.png.
 - Next: gold scroll "THEME — EXPOSITION".
 ---
+
+---
+**[2026-10-25 14:05 WAT] TURN 08 — CLAUDE.md STANDING INSTRUCTIONS**
+- Produced CLAUDE.md: portable, task-agnostic agent spec. Kept the user's four sections (think before coding, simplicity, surgical changes, goal-driven) verbatim in intent, then added sections distilled from this project's real failures: verify empirically (measure don't recall; blank output = bug; negative controls; never execute side-effect test scaffolds), crash recovery, git/remote (no force, rebase-then-ff, verify remote SHA), credential least-privilege (probe it, don't assume), storage ceilings (splitting doesn't reduce bytes, .git counts, assets branch, $HOME==repo gotcha), layered media, background processes, honesty/accidents, environment notes, pre-flight checklist.
+- Each rule that cost something real names the incident, so it reads as earned rather than aspirational.

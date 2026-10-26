@@ -51,7 +51,16 @@ die() { printf '\033[1;31m✘ %s\033[0m\n' "$*" >&2; exit 1; }
 
 need_repo() {
   [ -d .git ] || die "no git repo in $REPO_DIR — run: $0 init <remote-url>"
-  git remote get-url origin >/dev/null 2>&1 || die "no 'origin' remote configured"
+  # .git/config is excluded from many workspace snapshots, so the remote can vanish
+  # between sessions. Record the (non-secret) URL in a tracked file and self-heal.
+  if ! git remote get-url origin >/dev/null 2>&1; then
+    if [ -f .gitremote ]; then
+      git remote add origin "$(head -1 .gitremote)"
+      warn "origin was missing (snapshot dropped .git/config) — restored from .gitremote"
+    else
+      die "no 'origin' remote configured — run: $0 init <remote-url>"
+    fi
+  fi
 }
 
 # ── size guard: runs before every commit ─────────────────────
@@ -131,6 +140,7 @@ init)
   git remote get-url origin >/dev/null 2>&1 \
     && git remote set-url origin "$URL" \
     || git remote add origin "$URL"
+  printf '%s\n' "$URL" > .gitremote    # survives .git/config being dropped
 
   cat > .gitignore <<'EOF'
 # token / credentials - never commit
@@ -470,7 +480,7 @@ doctor)
   say "checking auth to $(git remote get-url origin)"
   git ls-remote --heads origin >/dev/null 2>&1 \
     && ok "auth works (read)" \
-    || die "cannot read remote — token wrong/expired, or URL wrong"
+    || die "cannot read remote — token missing/expired (re-provision ~/.git-credentials), or URL wrong"
   say "checking push permission without changing anything"
   git push --dry-run origin "HEAD:$BRANCH" >/dev/null 2>&1 \
     && ok "push permitted" \
